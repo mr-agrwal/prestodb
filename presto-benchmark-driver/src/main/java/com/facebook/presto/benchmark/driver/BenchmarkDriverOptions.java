@@ -85,6 +85,9 @@ public class BenchmarkDriverOptions
     @Option(name = "--client-request-timeout", title = "client request timeout", description = "Client request timeout (default: 2m)")
     public Duration clientRequestTimeout = new Duration(2, MINUTES);
 
+    @Option(name = "--threads", title = "threads", description = "Number of threads to use for querying presto")
+    public int threads = 1;
+
     public ClientSession getClientSession()
     {
         return new ClientSession(

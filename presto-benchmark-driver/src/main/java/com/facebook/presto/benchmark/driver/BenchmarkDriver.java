@@ -18,10 +18,15 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.net.HostAndPort;
 
 import java.io.Closeable;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import static java.util.Objects.requireNonNull;
 
@@ -32,24 +37,27 @@ public class BenchmarkDriver
     private final List<BenchmarkQuery> queries;
     private final BenchmarkResultsStore resultsStore;
     private final BenchmarkQueryRunner queryRunner;
+    private final int threads;
 
     public BenchmarkDriver(BenchmarkResultsStore resultsStore,
-            ClientSession clientSession,
-            Iterable<BenchmarkQuery> queries,
-            int warm,
-            int runs,
-            boolean debug,
-            int maxFailures,
-            Optional<HostAndPort> socksProxy)
+                           ClientSession clientSession,
+                           Iterable<BenchmarkQuery> queries,
+                           int warm,
+                           int runs,
+                           boolean debug,
+                           int maxFailures,
+                           Optional<HostAndPort> socksProxy,
+                           int threads)
     {
         this.resultsStore = requireNonNull(resultsStore, "resultsStore is null");
         this.clientSession = requireNonNull(clientSession, "clientSession is null");
         this.queries = ImmutableList.copyOf(requireNonNull(queries, "queries is null"));
+        this.threads = threads;
 
         queryRunner = new BenchmarkQueryRunner(warm, runs, debug, maxFailures, clientSession.getServer(), socksProxy);
     }
 
-    public void run(Suite suite)
+    public void run(Suite suite) throws ExecutionException, InterruptedException
     {
         // select queries to run
         List<BenchmarkQuery> queries = suite.selectQueries(this.queries);
@@ -78,14 +86,17 @@ public class BenchmarkDriver
         }
 
         for (BenchmarkSchema benchmarkSchema : benchmarkSchemas) {
+            ExecutorService executorService = Executors.newFixedThreadPool(threads);
+            List<Future<BenchmarkQueryResult>> results = new ArrayList<>();
             for (BenchmarkQuery benchmarkQuery : queries) {
-                session = ClientSession.builder(session)
+                ClientSession schemaSession = ClientSession.builder(session)
                         .withCatalog(session.getCatalog())
                         .withSchema(benchmarkSchema.getName())
                         .build();
-                BenchmarkQueryResult result = queryRunner.execute(suite, session, benchmarkQuery);
-
-                resultsStore.store(benchmarkSchema, result);
+                results.add(executorService.submit(() -> queryRunner.execute(suite, schemaSession, benchmarkQuery)));
+            }
+            for (Future<BenchmarkQueryResult> result : results) {
+                resultsStore.store(benchmarkSchema, result.get());
             }
         }
     }
