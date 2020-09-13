@@ -30,9 +30,9 @@ public class BenchmarkQueryResult
 
     private static final Stat FAIL_STAT = new Stat(new double[0]);
 
-    public static BenchmarkQueryResult passResult(Suite suite, BenchmarkQuery benchmarkQuery, Stat wallTimeNanos, Stat processCpuTimeNanos, Stat queryCpuTimeNanos)
+    public static BenchmarkQueryResult passResult(Suite suite, BenchmarkQuery benchmarkQuery, Stat wallTimeNanos, Stat queryCpuTimeNanos, Stat peakTotalMemoryBytes)
     {
-        return new BenchmarkQueryResult(suite, benchmarkQuery, Status.PASS, Optional.empty(), wallTimeNanos, processCpuTimeNanos, queryCpuTimeNanos);
+        return new BenchmarkQueryResult(suite, benchmarkQuery, Status.PASS, Optional.empty(), wallTimeNanos, queryCpuTimeNanos, peakTotalMemoryBytes);
     }
 
     public static BenchmarkQueryResult failResult(Suite suite, BenchmarkQuery benchmarkQuery, String errorMessage)
@@ -45,8 +45,8 @@ public class BenchmarkQueryResult
     private final Status status;
     private final Optional<String> errorMessage;
     private final Stat wallTimeNanos;
-    private final Stat processCpuTimeNanos;
     private final Stat queryCpuTimeNanos;
+    private final Stat peakTotalMemoryBytes;
 
     private BenchmarkQueryResult(
             Suite suite,
@@ -54,16 +54,16 @@ public class BenchmarkQueryResult
             Status status,
             Optional<String> errorMessage,
             Stat wallTimeNanos,
-            Stat processCpuTimeNanos,
-            Stat queryCpuTimeNanos)
+            Stat queryCpuTimeNanos,
+            Stat peakTotalMemoryBytes)
     {
         this.suite = requireNonNull(suite, "suite is null");
         this.benchmarkQuery = requireNonNull(benchmarkQuery, "benchmarkQuery is null");
         this.status = requireNonNull(status, "status is null");
         this.errorMessage = requireNonNull(errorMessage, "errorMessage is null");
         this.wallTimeNanos = requireNonNull(wallTimeNanos, "wallTimeNanos is null");
-        this.processCpuTimeNanos = requireNonNull(processCpuTimeNanos, "processCpuTimeNanos is null");
         this.queryCpuTimeNanos = requireNonNull(queryCpuTimeNanos, "queryCpuTimeNanos is null");
+        this.peakTotalMemoryBytes = requireNonNull(peakTotalMemoryBytes, "peakTotalMemoryBytes is null");
     }
 
     public Suite getSuite()
@@ -91,9 +91,9 @@ public class BenchmarkQueryResult
         return wallTimeNanos;
     }
 
-    public Stat getProcessCpuTimeNanos()
+    public Stat getPeakTotalMemoryBytes()
     {
-        return processCpuTimeNanos;
+        return peakTotalMemoryBytes;
     }
 
     public Stat getQueryCpuTimeNanos()
@@ -111,12 +111,12 @@ public class BenchmarkQueryResult
                 .add("wallTimeMedian", new Duration(wallTimeNanos.getMedian(), NANOSECONDS).convertToMostSuccinctTimeUnit())
                 .add("wallTimeMean", new Duration(wallTimeNanos.getMean(), NANOSECONDS).convertToMostSuccinctTimeUnit())
                 .add("wallTimeStd", new Duration(wallTimeNanos.getStandardDeviation(), NANOSECONDS).convertToMostSuccinctTimeUnit())
-                .add("processCpuTimeMedian", new Duration(processCpuTimeNanos.getMedian(), NANOSECONDS).convertToMostSuccinctTimeUnit())
-                .add("processCpuTimeMean", new Duration(processCpuTimeNanos.getMean(), NANOSECONDS).convertToMostSuccinctTimeUnit())
-                .add("processCpuTimeStd", new Duration(processCpuTimeNanos.getStandardDeviation(), NANOSECONDS).convertToMostSuccinctTimeUnit())
                 .add("queryCpuTimeMedian", new Duration(queryCpuTimeNanos.getMedian(), NANOSECONDS).convertToMostSuccinctTimeUnit())
                 .add("queryCpuTimeMean", new Duration(queryCpuTimeNanos.getMean(), NANOSECONDS).convertToMostSuccinctTimeUnit())
                 .add("queryCpuTimeStd", new Duration(queryCpuTimeNanos.getStandardDeviation(), NANOSECONDS).convertToMostSuccinctTimeUnit())
+                .add("processCpuTimeMedian", peakTotalMemoryBytes.getMedian())
+                .add("processCpuTimeMean", peakTotalMemoryBytes.getMean())
+                .add("processCpuTimeStd", peakTotalMemoryBytes.getStandardDeviation())
                 .add("error", errorMessage)
                 .toString();
     }

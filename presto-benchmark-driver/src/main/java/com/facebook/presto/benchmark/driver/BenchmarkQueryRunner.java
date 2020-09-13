@@ -117,21 +117,15 @@ public class BenchmarkQueryRunner
         }
 
         double[] wallTimeNanos = new double[runs];
-        double[] processCpuTimeNanos = new double[runs];
         double[] queryCpuTimeNanos = new double[runs];
+        double[] peakTotalMemoryBytes = new double[runs];
         for (int i = 0; i < runs; ) {
             try {
-                long startCpuTime = getTotalCpuTime();
-                long startWallTime = System.nanoTime();
-
                 StatementStats statementStats = execute(session, query.getName(), query.getSql());
 
-                long endWallTime = System.nanoTime();
-                long endCpuTime = getTotalCpuTime();
-
-                wallTimeNanos[i] = endWallTime - startWallTime;
-                processCpuTimeNanos[i] = endCpuTime - startCpuTime;
+                wallTimeNanos[i] = MILLISECONDS.toNanos(statementStats.getElapsedTimeMillis());
                 queryCpuTimeNanos[i] = MILLISECONDS.toNanos(statementStats.getCpuTimeMillis());
+                peakTotalMemoryBytes[i] = statementStats.getPeakTotalMemoryBytes();
 
                 i++;
                 failures = 0;
@@ -148,8 +142,8 @@ public class BenchmarkQueryRunner
                 suite,
                 query,
                 new Stat(wallTimeNanos),
-                new Stat(processCpuTimeNanos),
-                new Stat(queryCpuTimeNanos));
+                new Stat(queryCpuTimeNanos),
+                new Stat(peakTotalMemoryBytes));
     }
 
     public List<String> getSchemas(ClientSession session)
