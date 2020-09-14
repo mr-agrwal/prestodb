@@ -85,18 +85,33 @@ public class BenchmarkDriver
             return;
         }
 
-        for (BenchmarkSchema benchmarkSchema : benchmarkSchemas) {
-            ExecutorService executorService = Executors.newFixedThreadPool(threads);
-            List<Future<BenchmarkQueryResult>> results = new ArrayList<>();
-            for (BenchmarkQuery benchmarkQuery : queries) {
+        if (threads == 1) {
+            for (BenchmarkSchema benchmarkSchema : benchmarkSchemas) {
                 ClientSession schemaSession = ClientSession.builder(session)
                         .withCatalog(session.getCatalog())
                         .withSchema(benchmarkSchema.getName())
                         .build();
-                results.add(executorService.submit(() -> queryRunner.execute(suite, schemaSession, benchmarkQuery)));
+                for (BenchmarkQuery benchmarkQuery : queries) {
+                    BenchmarkQueryResult result = queryRunner.execute(suite, schemaSession, benchmarkQuery);
+                    resultsStore.store(benchmarkSchema, result);
+                }
             }
-            for (Future<BenchmarkQueryResult> result : results) {
-                resultsStore.store(benchmarkSchema, result.get());
+        }
+        else {
+            for (BenchmarkSchema benchmarkSchema : benchmarkSchemas) {
+                ClientSession schemaSession = ClientSession.builder(session)
+                        .withCatalog(session.getCatalog())
+                        .withSchema(benchmarkSchema.getName())
+                        .build();
+                ExecutorService executorService = Executors.newFixedThreadPool(threads);
+                List<Future<BenchmarkQueryResult>> results = new ArrayList<>();
+                for (BenchmarkQuery benchmarkQuery : queries) {
+                    results.add(executorService.submit(() -> queryRunner.execute(suite, schemaSession, benchmarkQuery)));
+                }
+                for (Future<BenchmarkQueryResult> result : results) {
+                    resultsStore.store(benchmarkSchema, result.get());
+                }
+                executorService.shutdown();
             }
         }
     }
