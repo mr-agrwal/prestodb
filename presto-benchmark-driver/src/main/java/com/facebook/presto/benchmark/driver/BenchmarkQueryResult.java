@@ -20,6 +20,7 @@ import java.util.Optional;
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class BenchmarkQueryResult
 {
@@ -30,20 +31,21 @@ public class BenchmarkQueryResult
 
     private static final Stat FAIL_STAT = new Stat(new double[0]);
 
-    public static BenchmarkQueryResult passResult(Suite suite, BenchmarkQuery benchmarkQuery, Stat wallTimeNanos, Stat queryCpuTimeNanos, Stat peakTotalMemoryBytes)
+    public static BenchmarkQueryResult passResult(Suite suite, BenchmarkQuery benchmarkQuery, int runs, Stat wallTimeNanos, Stat queryCpuTimeNanos, Stat peakTotalMemoryBytes)
     {
-        return new BenchmarkQueryResult(suite, benchmarkQuery, Status.PASS, Optional.empty(), wallTimeNanos, queryCpuTimeNanos, peakTotalMemoryBytes);
+        return new BenchmarkQueryResult(suite, benchmarkQuery, Status.PASS, Optional.empty(), runs, wallTimeNanos, queryCpuTimeNanos, peakTotalMemoryBytes);
     }
 
-    public static BenchmarkQueryResult failResult(Suite suite, BenchmarkQuery benchmarkQuery, String errorMessage)
+    public static BenchmarkQueryResult failResult(Suite suite, BenchmarkQuery benchmarkQuery, String errorMessage, int runs)
     {
-        return new BenchmarkQueryResult(suite, benchmarkQuery, Status.FAIL, Optional.of(errorMessage), FAIL_STAT, FAIL_STAT, FAIL_STAT);
+        return new BenchmarkQueryResult(suite, benchmarkQuery, Status.FAIL, Optional.of(errorMessage), runs, FAIL_STAT, FAIL_STAT, FAIL_STAT);
     }
 
     private final Suite suite;
     private final BenchmarkQuery benchmarkQuery;
     private final Status status;
     private final Optional<String> errorMessage;
+    private final int runs;
     private final Stat wallTimeNanos;
     private final Stat queryCpuTimeNanos;
     private final Stat peakTotalMemoryBytes;
@@ -53,6 +55,7 @@ public class BenchmarkQueryResult
             BenchmarkQuery benchmarkQuery,
             Status status,
             Optional<String> errorMessage,
+            int runs,
             Stat wallTimeNanos,
             Stat queryCpuTimeNanos,
             Stat peakTotalMemoryBytes)
@@ -61,6 +64,7 @@ public class BenchmarkQueryResult
         this.benchmarkQuery = requireNonNull(benchmarkQuery, "benchmarkQuery is null");
         this.status = requireNonNull(status, "status is null");
         this.errorMessage = requireNonNull(errorMessage, "errorMessage is null");
+        this.runs = runs;
         this.wallTimeNanos = requireNonNull(wallTimeNanos, "wallTimeNanos is null");
         this.queryCpuTimeNanos = requireNonNull(queryCpuTimeNanos, "queryCpuTimeNanos is null");
         this.peakTotalMemoryBytes = requireNonNull(peakTotalMemoryBytes, "peakTotalMemoryBytes is null");
@@ -86,6 +90,11 @@ public class BenchmarkQueryResult
         return errorMessage;
     }
 
+    public int getRuns()
+    {
+        return runs;
+    }
+
     public Stat getWallTimeNanos()
     {
         return wallTimeNanos;
@@ -108,6 +117,9 @@ public class BenchmarkQueryResult
                 .add("suite", suite.getName())
                 .add("benchmarkQuery", benchmarkQuery.getName())
                 .add("status", status)
+                .add("runs", runs)
+                .add("total", new Duration(wallTimeNanos.getTotal(), NANOSECONDS).convertToMostSuccinctTimeUnit())
+                .add("qps", runs / new Duration(wallTimeNanos.getTotal(), NANOSECONDS).convertTo(SECONDS).getValue())
                 .add("wallTimeP95", new Duration(wallTimeNanos.getP95(), NANOSECONDS).convertToMostSuccinctTimeUnit())
                 .add("wallTimeMean", new Duration(wallTimeNanos.getMean(), NANOSECONDS).convertToMostSuccinctTimeUnit())
                 .add("wallTimeStd", new Duration(wallTimeNanos.getStandardDeviation(), NANOSECONDS).convertToMostSuccinctTimeUnit())

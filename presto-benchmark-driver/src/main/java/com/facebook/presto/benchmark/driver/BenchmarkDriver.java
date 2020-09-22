@@ -18,15 +18,10 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.net.HostAndPort;
 
 import java.io.Closeable;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 
 import static java.util.Objects.requireNonNull;
 
@@ -57,7 +52,7 @@ public class BenchmarkDriver
         queryRunner = new BenchmarkQueryRunner(warm, runs, debug, maxFailures, clientSession.getServer(), socksProxy);
     }
 
-    public void run(Suite suite) throws ExecutionException, InterruptedException
+    public void run(Suite suite)
     {
         // select queries to run
         List<BenchmarkQuery> queries = suite.selectQueries(this.queries);
@@ -85,33 +80,14 @@ public class BenchmarkDriver
             return;
         }
 
-        if (threads == 1) {
-            for (BenchmarkSchema benchmarkSchema : benchmarkSchemas) {
-                ClientSession schemaSession = ClientSession.builder(session)
-                        .withCatalog(session.getCatalog())
-                        .withSchema(benchmarkSchema.getName())
-                        .build();
-                for (BenchmarkQuery benchmarkQuery : queries) {
-                    BenchmarkQueryResult result = queryRunner.execute(suite, schemaSession, benchmarkQuery);
-                    resultsStore.store(benchmarkSchema, result);
-                }
-            }
-        }
-        else {
-            for (BenchmarkSchema benchmarkSchema : benchmarkSchemas) {
-                ClientSession schemaSession = ClientSession.builder(session)
-                        .withCatalog(session.getCatalog())
-                        .withSchema(benchmarkSchema.getName())
-                        .build();
-                ExecutorService executorService = Executors.newFixedThreadPool(threads);
-                List<Future<BenchmarkQueryResult>> results = new ArrayList<>();
-                for (BenchmarkQuery benchmarkQuery : queries) {
-                    results.add(executorService.submit(() -> queryRunner.execute(suite, schemaSession, benchmarkQuery)));
-                }
-                for (Future<BenchmarkQueryResult> result : results) {
-                    resultsStore.store(benchmarkSchema, result.get());
-                }
-                executorService.shutdown();
+        for (BenchmarkSchema benchmarkSchema : benchmarkSchemas) {
+            ClientSession schemaSession = ClientSession.builder(session)
+                    .withCatalog(session.getCatalog())
+                    .withSchema(benchmarkSchema.getName())
+                    .build();
+            for (BenchmarkQuery benchmarkQuery : queries) {
+                BenchmarkQueryResult result = queryRunner.execute(suite, schemaSession, benchmarkQuery, threads);
+                resultsStore.store(benchmarkSchema, result);
             }
         }
     }

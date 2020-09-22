@@ -32,8 +32,12 @@ import okhttp3.OkHttpClient;
 
 import java.io.Closeable;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
@@ -99,7 +103,7 @@ public class BenchmarkQueryRunner
     }
 
     @SuppressWarnings("AssignmentToForLoopParameter")
-    public BenchmarkQueryResult execute(Suite suite, ClientSession session, BenchmarkQuery query)
+    public BenchmarkQueryResult execute(Suite suite, ClientSession session, BenchmarkQuery query, int threads)
     {
         failures = 0;
         for (int i = 0; i < warm; ) {
@@ -109,7 +113,7 @@ public class BenchmarkQueryRunner
                 failures = 0;
             }
             catch (BenchmarkDriverExecutionException e) {
-                return failResult(suite, query, e.getCause().getMessage());
+                return failResult(suite, query, e.getCause().getMessage(), warm);
             }
             catch (Exception e) {
                 handleFailure(e);
@@ -119,9 +123,16 @@ public class BenchmarkQueryRunner
         double[] wallTimeNanos = new double[runs];
         double[] queryCpuTimeNanos = new double[runs];
         double[] peakTotalMemoryBytes = new double[runs];
+        ExecutorService executorService = Executors.newFixedThreadPool(threads);
+        List<Future<StatementStats>> results = new ArrayList<>();
+        for (int i = 0; i < runs; ) {
+            results.add(executorService.submit(() -> execute(session, query.getName(), query.getSql())));
+            i++;
+        }
+
         for (int i = 0; i < runs; ) {
             try {
-                StatementStats statementStats = execute(session, query.getName(), query.getSql());
+                StatementStats statementStats = results.get(i).get();
 
                 wallTimeNanos[i] = MILLISECONDS.toNanos(statementStats.getElapsedTimeMillis());
                 queryCpuTimeNanos[i] = MILLISECONDS.toNanos(statementStats.getCpuTimeMillis());
@@ -131,16 +142,18 @@ public class BenchmarkQueryRunner
                 failures = 0;
             }
             catch (BenchmarkDriverExecutionException e) {
-                return failResult(suite, query, e.getCause().getMessage());
+                return failResult(suite, query, e.getCause().getMessage(), runs);
             }
             catch (Exception e) {
                 handleFailure(e);
             }
         }
+        executorService.shutdown();
 
         return passResult(
                 suite,
                 query,
+                runs,
                 new Stat(wallTimeNanos),
                 new Stat(queryCpuTimeNanos),
                 new Stat(peakTotalMemoryBytes));

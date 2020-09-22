@@ -16,20 +16,28 @@ package com.facebook.presto.benchmark.driver;
 import org.apache.commons.math3.stat.descriptive.moment.Mean;
 import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation;
 import org.apache.commons.math3.stat.descriptive.rank.Percentile;
+import org.apache.commons.math3.stat.descriptive.summary.Sum;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
 
 public class Stat
 {
+    private final double total;
     private final double mean;
     private final double standardDeviation;
     private final double p95;
 
     public Stat(double[] values)
     {
+        total = new Sum().evaluate(values);
         mean = new Mean().evaluate(values);
         standardDeviation = new StandardDeviation().evaluate(values);
         p95 = new Percentile(95.0).evaluate(values);
+    }
+
+    public double getTotal()
+    {
+        return total;
     }
 
     public double getMean()
@@ -51,6 +59,7 @@ public class Stat
     public String toString()
     {
         return toStringHelper(this)
+                .add("total", total)
                 .add("mean", mean)
                 .add("standardDeviation", standardDeviation)
                 .add("p95", p95)
