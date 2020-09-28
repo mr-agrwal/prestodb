@@ -14,6 +14,7 @@
 package com.facebook.presto.pinot;
 
 import com.facebook.presto.pinot.functions.PinotDistinctCountAggregationFunction;
+import com.facebook.presto.pinot.functions.PinotDistinctCountBitmapAggregationFunction;
 import com.facebook.presto.pinot.functions.PinotSegmentPartitionedDistinctCountAggregationFunction;
 import com.facebook.presto.spi.Plugin;
 import com.facebook.presto.spi.connector.ConnectorFactory;
@@ -37,6 +38,7 @@ public class PinotPlugin
         return ImmutableSet.<Class<?>>builder()
             .add(PinotSegmentPartitionedDistinctCountAggregationFunction.class)
             .add(PinotDistinctCountAggregationFunction.class)
+            .add(PinotDistinctCountBitmapAggregationFunction.class)
             .build();
     }
 }

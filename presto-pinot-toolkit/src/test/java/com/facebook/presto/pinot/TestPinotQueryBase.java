@@ -25,6 +25,7 @@ import com.facebook.presto.metadata.Metadata;
 import com.facebook.presto.metadata.MetadataManager;
 import com.facebook.presto.metadata.SessionPropertyManager;
 import com.facebook.presto.pinot.functions.PinotDistinctCountAggregationFunction;
+import com.facebook.presto.pinot.functions.PinotDistinctCountBitmapAggregationFunction;
 import com.facebook.presto.pinot.functions.PinotSegmentPartitionedDistinctCountAggregationFunction;
 import com.facebook.presto.pinot.query.PinotQueryGeneratorContext;
 import com.facebook.presto.spi.ColumnHandle;
@@ -112,8 +113,10 @@ public class TestPinotQueryBase
     static {
         metadata.registerBuiltInFunctions(extractFunctions(PinotDistinctCountAggregationFunction.class));
         metadata.registerBuiltInFunctions(extractFunctions(PinotSegmentPartitionedDistinctCountAggregationFunction.class));
+        metadata.registerBuiltInFunctions(extractFunctions(PinotDistinctCountBitmapAggregationFunction.class));
         functionMetadataManager.registerBuiltInFunctions(extractFunctions(PinotDistinctCountAggregationFunction.class));
         functionMetadataManager.registerBuiltInFunctions(extractFunctions(PinotSegmentPartitionedDistinctCountAggregationFunction.class));
+        functionMetadataManager.registerBuiltInFunctions(extractFunctions(PinotDistinctCountBitmapAggregationFunction.class));
     }
 
     protected static final Map<VariableReferenceExpression, PinotQueryGeneratorContext.Selection> testInput =

@@ -88,6 +88,7 @@ public class PinotQueryGenerator
                     .put("distinctcount", "DISTINCTCOUNT")
                     .put("approx_distinct", "DISTINCTCOUNTHLL")
                     .put("segmentpartitioneddistinctcount", "SEGMENTPARTITIONEDDISTINCTCOUNT")
+                    .put("distinctcountbitmap", "DISTINCTCOUNTBITMAP")
                     .build();
 
     private final PinotConfig pinotConfig;
