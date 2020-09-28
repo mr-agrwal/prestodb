@@ -15,7 +15,14 @@ package com.facebook.presto.pinot.functions;
 
 import com.facebook.presto.common.block.BlockBuilder;
 import com.facebook.presto.common.type.StandardTypes;
-import com.facebook.presto.spi.function.*;
+import com.facebook.presto.spi.function.AccumulatorState;
+import com.facebook.presto.spi.function.AggregationFunction;
+import com.facebook.presto.spi.function.CombineFunction;
+import com.facebook.presto.spi.function.Description;
+import com.facebook.presto.spi.function.InputFunction;
+import com.facebook.presto.spi.function.OutputFunction;
+import com.facebook.presto.spi.function.SqlType;
+import com.facebook.presto.spi.function.TypeParameter;
 import io.airlift.slice.Slice;
 
 @Description("Pinot UDF: A distinct count using bitmap function, should always be pushed down to Pinot")
