@@ -87,6 +87,7 @@ public class PinotQueryGenerator
                     .put("sum", "sum")
                     .put("distinctcount", "DISTINCTCOUNT")
                     .put("approx_distinct", "DISTINCTCOUNTHLL")
+                    .put("segmentpartitioneddistinctcount", "SEGMENTPARTITIONEDDISTINCTCOUNT")
                     .build();
 
     private final PinotConfig pinotConfig;
