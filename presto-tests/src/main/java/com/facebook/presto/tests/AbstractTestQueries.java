@@ -365,6 +365,9 @@ public abstract class AbstractTestQueries
         assertQuery("SELECT a.col1[2].col0, a.col1[2].col1 FROM (VALUES ROW(cast(row(1.0, ARRAY[row(31, 4.1E0), row(32, 4.2E0)], row(3, 4.0E0)) AS ROW(col0 double, col1 array(row(col0 integer, col1 double)), col2 row(col0 integer, col1 double))))) t(a)", "SELECT 32, 4.2");
 
         assertQuery("SELECT CAST(row(11, 12) AS row(col0 bigint, col1 bigint)).col0", "SELECT 11");
+
+        // Dereference in VALUES node
+        assertQuery("SELECT v FROM ( VALUES (ARRAY[ CAST( ROW(2, 'a') AS ROW( int_field BIGINT, str_field VARCHAR ) )][1].str_field)) AS t (v)", "SELECT 'a'");
     }
 
     @Test
@@ -5375,5 +5378,22 @@ public abstract class AbstractTestQueries
         assertQuery(
                 "SELECT NULL IS DISTINCT FROM R.name FROM nation N LEFT OUTER JOIN region R ON N.regionkey = R.regionkey AND R.regionkey = 2 WHERE N.name='JAPAN'",
                 "SELECT TRUE");
+    }
+
+    @Test
+    public void testDereference()
+    {
+        assertQuery(
+                "select cast(row(row(row(random(10), if(random(10) >= 0, 2)), random(10)), random(100)) AS row(x row(y row(a int, b int), c int), d int)).x.y.b",
+                "select 2");
+        assertQuery(
+                "select cast(row(row(row(random(10), if(random(10) < 0, 2)), random(10)), random(100)) AS row(x row(y row(a int, b int), c int), d int)).x.y.b",
+                "select null");
+        assertQuery(
+                "select cast(row(row(null, random(10)), random(100)) AS row(x row(y row(a int, b int), c int), d int)).x.y.b",
+                "select null");
+        assertQuery(
+                "select cast(row(row(null, if(random(100) >= 0, 4)), random(10)) AS row(x row(y row(a int, b int), c int), d int)).x.c",
+                "select 4");
     }
 }
